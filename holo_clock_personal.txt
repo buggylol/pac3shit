@@ -1,0 +1,162 @@
+@name Holo clock
+@persist Size GMT Sound:string Volume
+
+if(first()|dupefinished()|duped()){ # ----- PARAMETERS -----
+    
+    Size=3  # Size of the clock (staying under 50 recommended)
+    
+    Color1=vec(150,150,150)            # Background color
+    Color2=vec(30,30,30)            # Foreground color
+    Color3=vec(0,0,0)         # Handles color
+    Color4=vec(0,0,0)           # Marks color
+    Color5=vec(0,0,0)          # Middle pin color
+    Color6=vec(50,100,255)          # Glass color
+    Color7=vec(150,50,50)
+    Alpha=250                       # Glass transparency
+    Material="phoenix_storms/glass" # Glass material
+    
+    GMT=0       # Set your GMT (local time zone, 0 for UTC; add 1 if DST)
+    Volume=0.05    # Volume of the sound, set to 0 for no sound
+    
+    runOnChat(1)   # Enables chat commands
+
+} # ------------------------------------------------
+
+#[
+    Code written by Hyperion ( http://steamcommunity.com/id/ElHyperion/ )
+    
+    Feel free to add me if you want to let me know about issues,
+    give suggestions, or just ask me anything about the clock
+]#
+
+Sec=time("sec")
+Min=time("min")
+Hour=time("hour")+GMT
+HourX=cos(time("hour")*7.5)
+HourY=sin(time("hour")*7.5)
+
+if(Hour>23){Hour-=24}
+
+interval(1000)
+
+if(first()|dupefinished()|duped()){ # --- GENERIC RENDERING ---
+    
+    entity():setAlpha(0)
+    
+    X=0 # Main body
+    holoCreate(X) holoModel(X,"hq_cylinder")
+    holoPos(X,entity():toWorld(vec(0,0,0))) holoScale(X,vec(Size,Size,0.1))
+    holoColor(X,Color1) holoParent(X,entity())
+    
+    X++ # Main body frame
+    holoCreate(X) holoModel(X,"hq_tube_thin")
+    holoPos(X,entity():toWorld(vec(0,0,0.5))) holoScale(X,vec(Size+Size/20,Size+Size/20,0.2))
+    holoColor(X,Color2) holoParent(X,entity())
+    
+    X++ # Middle pin
+    holoCreate(X) holoModel(X,"hq_cylinder")
+    holoPos(X,entity():toWorld(vec(0,0,0.8))) holoScale(X,vec(Size/40,Size/40,0.10))
+    holoColor(X,Color5) holoParent(X,entity())
+    
+    X++ # Middle pin cover
+    holoCreate(X) holoModel(X,"hq_cylinder")
+    holoPos(X,entity():toWorld(vec(0,0,1.4))) holoScale(X,vec(Size/15,Size/15,0.01))
+    holoColor(X,Color2) holoParent(X,entity())
+    
+    X++ # Hour handle
+    holoCreate(X) holoScale(X,vec(Size/3,Size/50,0.01))
+    holoColor(X,Color3) holoParent(X,entity())
+    
+    X++ # Minute handle
+    holoCreate(X) holoPos(X,entity():toWorld(vec(6,0,1))) holoScale(X,vec(Size/2,Size/60,0.01))
+    holoColor(X,Color3) holoParent(X,entity())
+    
+    X++ # Second handle
+    holoCreate(X)
+    holoPos(X,entity():toWorld(vec(6,0,0.8))) holoScale(X,vec(Size/1.7,Size/100,0.01))
+    holoColor(X,Color7) holoParent(X,entity())
+    
+    X++ # Glass cover
+    holoCreate(X) holoModel(X,"hq_cylinder")
+    holoPos(X,entity():toWorld(vec(0,0,0+1.55))) holoScale(X,vec(Size,Size,0.005))
+    holoColor(X,Color6) holoAlpha(X,Alpha) holoMaterial(X,Material)
+    holoParent(X,entity())
+    
+    for(I=1,12){ # Marks
+        X++
+        holoCreate(X) holoPos(X,entity():toWorld(vec(-cos(I*30)*Size*5.5,sin(I*30)*Size*5.5,0.65)))
+        if(I%3==0){
+            holoScale(X,vec(Size*0.1,Size*0.02,0.01))
+        }else{
+            holoScale(X,vec(Size*0.04,Size*0.014,0.01))
+        }
+        holoAng(X,entity():toWorld(ang(0,360-I*30,0)))
+        holoColor(X,Color4) holoParent(X,entity())
+    }
+    
+    hint("Thank you for using Hyperion's holographic clock!",4)
+    hint("To set the timezone, type \"/clocktime <timezone>\" into the chat",6)
+    
+}    
+
+
+    # Handle engine
+
+# Hour
+holoAng(4,entity():toWorld(ang(0,-Sec/600-Min/2-Hour*30,0)))
+holoPos(4,entity():toWorld(vec(-cos(Hour*30+Sec/600+Min/2)*Size*1.4,sin(Hour*30+Sec/600+Min/2)*Size*1.4,1.2)))
+
+# Minute
+holoAng(5,entity():toWorld(ang(0,-Min*6-Sec/10,0)))
+holoPos(5,entity():toWorld(vec(-cos(Min*6+Sec/10)*Size*2,sin(Min*6+Sec/10)*Size*2,1)))
+
+# Second
+holoAng(6,entity():toWorld(ang(0,-Sec*6,0)))
+holoPos(6,entity():toWorld(vec(-cos(Sec*6)*Size*2,sin(Sec*6)*Size*2,0.8)))
+
+
+    # Sound
+
+if(changed(time("sec"))&!first()){
+    soundPlay(1,0.8,Sound)
+    soundVolume(1,Volume)
+    
+    #Tone modulator
+    if(time("sec")%2>0){
+        Pitch=random(85,95)
+    }else{
+        Pitch=random(105,115)
+    }
+    soundPitch(1,Pitch)
+}
+
+
+# Chat commands
+
+if(chatClk(owner())){
+    
+    Command=owner():lastSaid():explode(" ")
+    
+    if(Command[1,string]=="/clocktime"){
+        
+        if(Command[2,string]:toNumber()>-12 & Command[2,string]:toNumber()<12 ){
+            print("Clock timezone set to "+Command[2,string]:toNumber())
+            GMT=Command[2,string]:toNumber()
+        }else{
+            print("Wrong timezone! Use numbers from -12 to 12 only")
+        }
+        
+    }
+
+}
+
+#[
+    # Chat notifier (requires chatPrint E2 extension)
+
+if(!time("min")&!Sec){
+    chatPrint("Server time: "+Hour+":"+Min+0)
+}elseif(Min%15==0&!Sec){
+    chatPrint(vec(150,150,150),"Server time: "+Hour+":"+Min)
+}
+
+]#
